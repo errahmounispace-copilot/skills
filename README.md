@@ -107,7 +107,7 @@ The [`/tdd`](./skills/engineering/tdd/SKILL.md) skill enforces red-green-refacto
 
 ## Buckets
 
-See [CLAUDE.md](./CLAUDE.md) for how skills are organised (`engineering/`, `productivity/`, `misc/`, `personal/`, `in-progress/`, `deprecated/`).
+See [AGENTS.md](./AGENTS.md) for how skills are organised (`engineering/`, `productivity/`, `misc/`, `personal/`, `in-progress/`, `deprecated/`).
 
 ## What changed from the TypeScript upstream
 
