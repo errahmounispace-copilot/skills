@@ -109,14 +109,4 @@ The [`/tdd`](./skills/engineering/tdd/SKILL.md) skill enforces red-green-refacto
 
 See [AGENTS.md](./AGENTS.md) for how skills are organised (`engineering/`, `productivity/`, `misc/`, `personal/`, `in-progress/`, `deprecated/`).
 
-## What changed from the TypeScript upstream
-
-| Change | Reason |
-|--------|--------|
-| `setup-matt-pocock-skills` → **`setup-laravel-skills`** | Records Pest/PHPUnit, UI layer, Pint, PHPStan |
-| **Removed** `migrate-to-shoehorn` | `@total-typescript/shoehorn` is TS-only |
-| **Removed** `scaffold-exercises` | Tied to `ai-hero-cli` / TS course layout |
-| **Removed** `setup-pre-commit` (Husky/Prettier) | Replaced by **`setup-laravel-git-hooks`** |
-| **Rewrote** `tdd/*`, `prototype/*`, `diagnose` | Pest, HTTP Feature tests, Artisan, Blade/Livewire |
-
 Personal, in-progress, and deprecated buckets are unchanged from upstream (not listed in README).
