@@ -8,7 +8,7 @@ Forked from [mattpocock/skills](https://github.com/mattpocock/skills) and adapte
 
 ### OpenCode
 
-OpenCode discovers skills from `~/.config/opencode/skills/` (and optionally `.opencode/skills/` in a project). This repo includes a local plugin that wraps the install scripts as tools.
+OpenCode discovers skills from `~/.config/opencode/skills/` (global) and `.agents/skills/` in a project. This repo includes a local plugin that wraps the install scripts as tools.
 
 ```bash
 # Install skills globally for OpenCode (and Claude / Agents)
@@ -16,7 +16,7 @@ OpenCode discovers skills from `~/.config/opencode/skills/` (and optionally `.op
 # Or all targets:
 ./scripts/link-skills.sh
 
-# Install into a Laravel project's .opencode/skills/
+# Install into a Laravel project's .agents/skills/
 ./scripts/link-skills.sh --project /path/to/your-app opencode
 ```
 

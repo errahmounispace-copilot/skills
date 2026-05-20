@@ -28,7 +28,7 @@ async function runBashScript(script: string, args: string[]): Promise<string> {
  * Exposes the same bash scripts as custom tools (in addition to running them directly).
  *
  * Skills are discovered from ~/.config/opencode/skills after `link-skills.sh opencode`,
- * or from .opencode/skills in a project after `link-skills.sh --project <dir> opencode`.
+ * or from .agents/skills in a project after `link-skills.sh --project <dir> opencode`.
  */
 export const LaravelSkillsPlugin: Plugin = async () => {
   return {
@@ -44,7 +44,7 @@ export const LaravelSkillsPlugin: Plugin = async () => {
           project: tool.schema
             .string()
             .optional()
-            .describe("Also link into <project>/.opencode/skills and/or .claude/skills"),
+            .describe("Also link into <project>/.agents/skills (opencode/agents) and/or .claude/skills"),
         },
         async execute(args) {
           const argv: string[] = [];

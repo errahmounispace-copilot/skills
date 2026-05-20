@@ -15,7 +15,7 @@ set -euo pipefail
 #   all       -> claude + opencode + agents
 #
 # --project DIR
-#   Also link into DIR/.opencode/skills (when opencode or all is selected)
+#   Also link into DIR/.agents/skills (when opencode, agents, or all is selected)
 #   and DIR/.claude/skills (when claude or all is selected).
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
@@ -42,7 +42,7 @@ TARGET (global install; default: all):
   all       -> claude + opencode + agents
 
 --project DIR
-  Also link into project skill dirs (.opencode/skills, .claude/skills, .agents/skills)
+  Also link into DIR/.agents/skills (opencode/agents) and/or DIR/.claude/skills (claude)
 EOF
   exit 0
 }
@@ -146,17 +146,18 @@ for t in "${unique[@]}"; do
 done
 
 if [[ -n "$PROJECT_DIR" ]]; then
+  project_opencode_or_agents=false
+  project_claude=false
   for t in "${unique[@]}"; do
     case "$t" in
-      opencode)
-        link_skills_to "$PROJECT_DIR/.opencode/skills"
-        ;;
-      agents)
-        link_skills_to "$PROJECT_DIR/.agents/skills"
-        ;;
-      claude)
-        link_skills_to "$PROJECT_DIR/.claude/skills"
-        ;;
+      opencode | agents) project_opencode_or_agents=true ;;
+      claude) project_claude=true ;;
     esac
   done
+  if $project_opencode_or_agents; then
+    link_skills_to "$PROJECT_DIR/.agents/skills"
+  fi
+  if $project_claude; then
+    link_skills_to "$PROJECT_DIR/.claude/skills"
+  fi
 fi

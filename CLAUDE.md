@@ -15,6 +15,6 @@ Each bucket folder has a `README.md` that lists every skill in the bucket with a
 
 ## OpenCode
 
-- Install paths: `~/.config/opencode/skills/` (global), `.opencode/skills/` (project) — use `./scripts/link-skills.sh opencode` or `opencode`.
+- Install paths: `~/.config/opencode/skills/` (global), `.agents/skills/` (project) — use `./scripts/link-skills.sh opencode` or `opencode`.
 - Local plugin: `.opencode/plugins/laravel-skills.ts` (tools: `link_skills`, `list_skills`).
 - Config: `opencode.json` at repo root. Plugin deps: `.opencode/package.json`.
