@@ -1,61 +1,88 @@
-# Good and Bad Tests
+# Good and Bad Tests (Laravel)
 
 ## Good Tests
 
-**Integration-style**: Test through real interfaces, not mocks of internal parts.
+**Integration-style**: Exercise real HTTP routes, jobs, or public service methods — not mocked internals.
 
-```typescript
-// GOOD: Tests observable behavior
-test("user can checkout with valid cart", async () => {
-  const cart = createCart();
-  cart.add(product);
-  const result = await checkout(cart, paymentMethod);
-  expect(result.status).toBe("confirmed");
+```php
+// GOOD: Feature test through HTTP — observable behaviour
+it('user can checkout with a valid cart', function () {
+    $user = User::factory()->create();
+    $product = Product::factory()->create(['price' => 1000]);
+
+    $this->actingAs($user)
+        ->post(route('cart.items.store'), ['product_id' => $product->id])
+        ->assertOk();
+
+    $this->post(route('checkout.store'), ['payment_method' => 'card'])
+        ->assertRedirect(route('orders.show', Order::first()));
+});
+```
+
+```php
+// GOOD: Unit test on a public Action/Service method
+it('calculates order total including tax', function () {
+    $order = Order::factory()->make(['subtotal' => 10000]);
+
+    $total = app(CalculateOrderTotal::class)->handle($order);
+
+    expect($total)->toBe(12000);
 });
 ```
 
 Characteristics:
 
-- Tests behavior users/callers care about
-- Uses public API only
-- Survives internal refactors
-- Describes WHAT, not HOW
-- One logical assertion per test
+- Tests behaviour users or callers care about
+- Uses public API (routes, form requests, Actions) only
+- Survives internal refactors (controller → Action, rename private methods)
+- Describes **what**, not **how**
+- One logical assertion focus per test (Pest `expect()` chains count as one story)
 
 ## Bad Tests
 
-**Implementation-detail tests**: Coupled to internal structure.
+**Implementation-detail tests**: Coupled to framework internals or call order.
 
-```typescript
-// BAD: Tests implementation details
-test("checkout calls paymentService.process", async () => {
-  const mockPayment = jest.mock(paymentService);
-  await checkout(cart, payment);
-  expect(mockPayment.process).toHaveBeenCalledWith(cart.total);
+```php
+// BAD: Asserts a specific internal method was called
+it('checkout calls PaymentGateway::charge', function () {
+    $gateway = Mockery::mock(PaymentGateway::class);
+    $gateway->shouldReceive('charge')->once();
+    $this->instance(PaymentGateway::class, $gateway);
+
+    app(CheckoutAction::class)->handle($cart);
 });
 ```
 
-Red flags:
+```php
+// BAD: Mocks Eloquent model methods you own
+$order = Mockery::mock(Order::class);
+$order->shouldReceive('save')->once();
+```
 
-- Mocking internal collaborators
-- Testing private methods
-- Asserting on call counts/order
-- Test breaks when refactoring without behavior change
-- Test name describes HOW not WHAT
-- Verifying through external means instead of interface
-
-```typescript
-// BAD: Bypasses interface to verify
-test("createUser saves to database", async () => {
-  await createUser({ name: "Alice" });
-  const row = await db.query("SELECT * FROM users WHERE name = ?", ["Alice"]);
-  expect(row).toBeDefined();
+```php
+// BAD: Bypasses interface to assert on database directly
+it('createUser saves to database', function () {
+    createUser(['name' => 'Alice']);
+    expect(DB::table('users')->where('name', 'Alice')->exists())->toBeTrue();
 });
 
-// GOOD: Verifies through interface
-test("createUser makes user retrievable", async () => {
-  const user = await createUser({ name: "Alice" });
-  const retrieved = await getUser(user.id);
-  expect(retrieved.name).toBe("Alice");
+// GOOD: Assert through the application's interface
+it('createUser makes user retrievable', function () {
+    $user = createUser(['name' => 'Alice']);
+    $this->actingAs($user)->get(route('profile.show'))
+        ->assertOk()
+        ->assertSee('Alice');
 });
 ```
+
+## Laravel-specific guidance
+
+| Layer | Prefer | Avoid |
+|-------|--------|-------|
+| User flows | `tests/Feature/` + `actingAs()` + route helpers | Unit-testing controllers line-by-line |
+| Domain logic | Pest unit tests on Actions/Services | Mocking `Model::query()` |
+| External APIs | `Http::fake()` with assertSent | Mocking your own HTTP client wrapper's private methods |
+| Mail / queues | `Mail::fake()`, `Queue::fake()` + `assertPushed` | Asserting raw `DB` or `Log` for side effects |
+| Time | `Carbon::setTestNow()` or `travelTo()` | Sleeping in tests |
+
+Use factories (`User::factory()`) and `RefreshDatabase` — they're fast enough and keep tests honest.

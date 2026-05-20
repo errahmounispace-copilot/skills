@@ -1,112 +1,113 @@
-# UI Prototype
+# UI Prototype (Laravel)
 
 Generate **several radically different UI variations** on a single route, switchable from a floating bottom bar. The user flips between variants in the browser, picks one (or steals bits from each), then throws the rest away.
 
-If the question is about logic/state rather than what something looks like — wrong branch. Use [LOGIC.md](LOGIC.md).
+If the question is about logic/state rather than appearance — wrong branch. Use [LOGIC.md](LOGIC.md).
+
+Read `docs/agents/laravel-stack.md` for the project's UI layer (Blade, Livewire, Inertia, Filament).
 
 ## When this is the right shape
 
-- "What should this page look like?"
-- "I want to see a few options for this dashboard before committing."
-- "Try a different layout for the settings screen."
-- Any time the user would otherwise spend a day picking between three vague mockups in their head.
+- "What should this settings page look like?"
+- "Try three layouts for the dashboard before we commit."
+- Any time the user would otherwise pick between vague mental mockups.
 
 ## Two sub-shapes — strongly prefer sub-shape A
 
-A UI prototype is much easier to judge when it's **butting up against the rest of the app** — real header, real sidebar, real data, real density. A throwaway route on its own is a vacuum: every variant looks fine in isolation. Default to sub-shape A whenever there's a plausible existing page to host the variants. Only reach for sub-shape B if the prototype genuinely has no nearby home.
+A UI prototype is easier to judge **inside the real app** — real nav, real auth, real data density. Default to sub-shape A whenever there's a plausible existing page. Use sub-shape B only when nothing sensible exists to host variants.
 
 ### Sub-shape A — adjustment to an existing page (preferred)
 
-The route already exists. Variants are rendered **on the same route**, gated by a `?variant=` URL search param. The existing data fetching, params, and auth all stay — only the rendering swaps. This is the default; pick it unless there's a specific reason not to.
+The route already exists. Variants render on the **same route**, gated by `?variant=` (or `request('variant')`). Keep existing middleware, authorization, and data loading — only the presentation subtree swaps.
 
-If the prototype is for something that doesn't yet have a page but *would naturally live inside one* (a new section of the dashboard, a new card on the settings screen, a new step in an existing flow) — that's still sub-shape A. Mount the variants inside the host page.
+If the feature doesn't have its own page yet but belongs inside one (new card on settings, new step in a wizard) — still sub-shape A. Embed variants in the host page.
 
 ### Sub-shape B — a new page (last resort)
 
-Only use this when the thing being prototyped genuinely has no existing page to live inside — e.g. an entirely new top-level surface, or a flow that can't be embedded anywhere sensible.
+Only when the surface has no existing home (new top-level area, standalone flow).
 
-Create a **throwaway route** following whatever routing convention the project already uses — don't invent a new top-level structure. Name it so it's obviously a prototype (e.g. include the word `prototype` in the path or filename). Same `?variant=` pattern.
+Add a throwaway route in `routes/web.php` (or the project's route file convention). Name it obviously: `/prototype/checkout-flow`, `PrototypeCheckoutController`, etc. Same `?variant=` pattern.
 
-Before committing to sub-shape B, sanity-check: is there really no existing page this could be embedded in? An empty route hides design problems that a populated one would expose.
-
-In both sub-shapes the floating bottom bar is identical.
+Before sub-shape B, sanity-check: can this live inside an existing page?
 
 ## Process
 
 ### 1. State the question and pick N
 
-Default to **3 variants**. More than 5 stops being radically different and starts being noise — cap there.
+Default to **3 variants**. Cap at 5.
 
-Write down the plan in one line, in the prototype's location or a top-of-file comment:
+One-line plan in a comment or `NOTES.md`:
 
-> "Three variants of the settings page, switchable via `?variant=`, on the existing `/settings` route."
-
-This works whether the user is here to push back or not.
+> "Three variants of `/settings`, switchable via `?variant=`, using Livewire."
 
 ### 2. Generate radically different variants
 
-Draft each variant. Hold each one to:
+Each variant must differ in **layout, hierarchy, and primary affordance** — not just colour. Hold to the project's stack:
 
-- The page's purpose and the data it has access to.
-- The project's component library / styling system (TailwindCSS, shadcn, MUI, plain CSS, whatever).
-- A clear exported component name, e.g. `VariantA`, `VariantB`, `VariantC`.
+| UI layer | Variant implementation |
+|----------|------------------------|
+| **Blade** | Separate `@include` partials or dedicated Blade views per variant |
+| **Livewire** | Separate components `VariantA`, `VariantB`, … mounted from parent |
+| **Inertia** | Separate page components; parent passes shared props |
+| **Filament** | Custom page with tab-like variant switcher (rare for prototypes) |
 
-Variants must be **structurally different** — different layout, different information hierarchy, different primary affordance, not just different colours. Three slightly-tweaked card grids isn't a UI prototype, it's wallpaper. If two drafts come out too similar, redo one with explicit "do not use a card grid" guidance.
+Use existing design tokens (Tailwind config, Flux, Filament theme) — don't invent a parallel design system.
 
 ### 3. Wire them together
 
-Create a single switcher component on the route:
+**Blade example:**
 
-```tsx
-// pseudo-code — adapt to the project's framework
-const variant = searchParams.get('variant') ?? 'A';
-return (
-  <>
-    {variant === 'A' && <VariantA {...data} />}
-    {variant === 'B' && <VariantB {...data} />}
-    {variant === 'C' && <VariantC {...data} />}
-    <PrototypeSwitcher variants={['A','B','C']} current={variant} />
-  </>
-);
+```blade
+@php $variant = request('variant', 'A'); @endphp
+
+@if ($variant === 'A')
+    @include('prototype.settings.variant-a', ['settings' => $settings])
+@elseif ($variant === 'B')
+    @include('prototype.settings.variant-b', ['settings' => $settings])
+@else
+    @include('prototype.settings.variant-c', ['settings' => $settings])
+@endif
+
+@include('prototype._switcher', ['variants' => ['A', 'B', 'C'], 'current' => $variant])
 ```
 
-For sub-shape A (existing page): keep all the existing data fetching above the switcher; only the rendered subtree changes per variant.
+**Livewire example:**
 
-For sub-shape B (new page): the throwaway route under `/prototype/<name>` mounts the same switcher.
+```php
+// Parent passes $settings; child components are self-contained layouts
+@livewire('prototype.settings.variant-' . strtolower($variant), ['settings' => $settings])
+```
+
+Keep data loading **above** the variant switch — variants only change presentation.
 
 ### 4. Build the floating switcher
 
-A small fixed-position bar at the bottom-centre of the screen with three pieces:
+Fixed bar bottom-centre:
 
-- **Left arrow** — cycles to the previous variant (wraps around).
-- **Variant label** — shows the current variant key and, if the variant exports a name, that name too. e.g. `B — Sidebar layout`.
-- **Right arrow** — cycles forward (wraps around).
+- **Left arrow** — previous variant (wrap)
+- **Label** — e.g. `B — Sidebar layout`
+- **Right arrow** — next variant (wrap)
 
 Behaviour:
 
-- Clicking an arrow updates the URL search param (use the framework's router — `router.replace` on Next, `navigate` on React Router, etc) so the variant is shareable and reload-stable.
-- Keyboard: `←` and `→` arrow keys also cycle. Don't intercept arrow keys when an `<input>`, `<textarea>`, or `[contenteditable]` is focused.
-- Visually distinct from the page (e.g. high-contrast pill, subtle shadow) so it's obviously not part of the design being evaluated.
-- Hidden in production builds — gate on `process.env.NODE_ENV !== 'production'` or an equivalent check, so a stray prototype merge can't ship the bar to users.
+- Updates `?variant=` via `history.replaceState` or a plain link — reload-stable and shareable
+- Keyboard `←` / `→` when focus is not in an input
+- Visually distinct from the page (pill, shadow)
+- **Hidden outside local/dev** — gate with `app()->environment('local')` or `config('app.debug')` so prototypes never ship to production
 
-Put the switcher in a single shared component so both sub-shapes can reuse it. Locate it wherever shared UI lives in the project.
+Put the switcher in `resources/views/prototype/_switcher.blade.php` or a shared Livewire component.
 
 ### 5. Hand it over
 
-Surface the URL (and the `?variant=` keys). The user will flip through whenever they get to it. The interesting feedback is usually **"I want the header from B with the sidebar from C"** — that's the actual design they want.
+Give the URL and variant keys. Feedback is usually **"header from B, sidebar from C"** — that's the real design.
 
 ### 6. Capture the answer and clean up
 
-Once a variant has won, write down which one and why (commit message, ADR, issue, or a `NOTES.md` next to the prototype if running AFK and the user hasn't responded yet). Then:
-
-- **Sub-shape A** — delete the losing variants and the switcher; fold the winner into the existing page.
-- **Sub-shape B** — promote the winning variant to a real route, delete the throwaway route and the switcher.
-
-Don't leave variant components or the switcher lying around. They rot fast and confuse the next reader.
+Record which variant won and why. Delete losers and the switcher. For sub-shape B, promote the winner to a real route.
 
 ## Anti-patterns
 
-- **Variants that differ only in colour or copy.** That's a tweak, not a prototype. Real variants disagree about structure.
-- **Sharing too much code between variants.** A shared `<Header>` is fine; a shared `<Layout>` defeats the point. Each variant should be free to throw out the layout.
-- **Wiring variants to real mutations.** Read-only prototypes are fine. If a variant needs to mutate, point it at a stub — the question is "what should this look like", not "does the backend work".
-- **Promoting the prototype directly to production.** The variant code was written under prototype constraints (no tests, minimal error handling). Rewrite it properly when you fold it in.
+- Variants that differ only in colour or copy
+- Shared layout partial that forces the same structure on every variant
+- Wiring variants to real mutations — read-only or stubbed actions are fine
+- Promoting prototype markup directly — rewrite with tests when folding in

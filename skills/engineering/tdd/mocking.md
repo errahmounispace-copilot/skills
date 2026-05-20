@@ -1,59 +1,95 @@
-# When to Mock
+# When to Mock (Laravel)
 
 Mock at **system boundaries** only:
 
-- External APIs (payment, email, etc.)
-- Databases (sometimes - prefer test DB)
-- Time/randomness
-- File system (sometimes)
+- External HTTP APIs → `Http::fake()` or a bound interface + test double
+- Payment providers, webhooks, third-party SDKs
+- Time → `Carbon::setTestNow()` / `$this->travelTo()`
+- Randomness / UUIDs when determinism matters
+
+Prefer **framework fakes** over Mockery when available:
+
+```php
+Http::fake([
+    'api.stripe.com/*' => Http::response(['id' => 'ch_123'], 200),
+]);
+
+Mail::fake();
+Queue::fake();
+Event::fake();
+Storage::fake('s3');
+```
 
 Don't mock:
 
-- Your own classes/modules
-- Internal collaborators
-- Anything you control
+- Your own Eloquent models (use factories + real DB with `RefreshDatabase`)
+- Internal Actions/Services you control
+- Laravel facades you could fake at the boundary instead (`Http`, not your `StripeClient` internals)
 
-## Designing for Mockability
+## Designing for testability
 
-At system boundaries, design interfaces that are easy to mock:
+**1. Constructor injection (Laravel container)**
 
-**1. Use dependency injection**
+```php
+// Easy to test — swap implementation in test via $this->instance()
+final readonly class ProcessOrder
+{
+    public function __construct(private PaymentGateway $payments) {}
 
-Pass external dependencies in rather than creating them internally:
-
-```typescript
-// Easy to mock
-function processPayment(order, paymentClient) {
-  return paymentClient.charge(order.total);
+    public function handle(Order $order): PaymentResult
+    {
+        return $this->payments->charge($order->total);
+    }
 }
 
-// Hard to mock
-function processPayment(order) {
-  const client = new StripeClient(process.env.STRIPE_KEY);
-  return client.charge(order.total);
+// Hard to test — hidden dependency
+final readonly class ProcessOrder
+{
+    public function handle(Order $order): PaymentResult
+    {
+        return (new StripeGateway(config('services.stripe.secret')))->charge($order->total);
+    }
 }
 ```
 
-**2. Prefer SDK-style interfaces over generic fetchers**
+**2. Narrow interfaces at boundaries**
 
-Create specific functions for each external operation instead of one generic function with conditional logic:
+```php
+// GOOD: One method per external concern — easy Http::fake() or mock
+interface PaymentGateway
+{
+    public function charge(Money $amount): PaymentResult;
+}
 
-```typescript
-// GOOD: Each function is independently mockable
-const api = {
-  getUser: (id) => fetch(`/users/${id}`),
-  getOrders: (userId) => fetch(`/users/${userId}/orders`),
-  createOrder: (data) => fetch('/orders', { method: 'POST', body: data }),
-};
-
-// BAD: Mocking requires conditional logic inside the mock
-const api = {
-  fetch: (endpoint, options) => fetch(endpoint, options),
-};
+// BAD: One giant fetch() — mocks need conditional branches
+interface ExternalApi
+{
+    public function request(string $method, string $url, array $options = []): array;
+}
 ```
 
-The SDK approach means:
-- Each mock returns one specific shape
-- No conditional logic in test setup
-- Easier to see which endpoints a test exercises
-- Type safety per endpoint
+**3. Bind interfaces in a service provider**
+
+```php
+// AppServiceProvider or dedicated provider
+$this->app->bind(PaymentGateway::class, StripeGateway::class);
+
+// In tests
+$this->instance(PaymentGateway::class, new FakePaymentGateway());
+```
+
+## Http::fake patterns
+
+```php
+Http::fake([
+    'api.example.com/users/*' => Http::response(['id' => 1, 'name' => 'Ada']),
+]);
+
+// Assert the app called the right endpoint
+Http::assertSent(fn ($request) =>
+    $request->url() === 'https://api.example.com/users/1'
+    && $request->method() === 'GET'
+);
+```
+
+Prefer asserting **outcomes** (order marked paid, email queued) over asserting **call counts** on internal collaborators.

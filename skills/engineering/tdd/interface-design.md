@@ -1,31 +1,39 @@
-# Interface Design for Testability
+# Interface Design for Testability (Laravel)
 
-Good interfaces make testing natural:
+Good boundaries make Pest tests natural:
 
-1. **Accept dependencies, don't create them**
+1. **Inject dependencies; don't resolve them inside the method**
 
-   ```typescript
+   ```php
    // Testable
-   function processOrder(order, paymentGateway) {}
+   public function __construct(private PaymentGateway $payments) {}
+
+   public function handle(Order $order): void
+   {
+       $this->payments->charge($order->total);
+   }
 
    // Hard to test
-   function processOrder(order) {
-     const gateway = new StripeGateway();
+   public function handle(Order $order): void
+   {
+       app(StripeGateway::class)->charge($order->total);
    }
    ```
 
-2. **Return results, don't produce side effects**
+2. **Return results; push side effects to the edges**
 
-   ```typescript
-   // Testable
-   function calculateDiscount(cart): Discount {}
+   ```php
+   // Testable — pure calculation
+   public function calculateDiscount(Cart $cart): Money { ... }
 
-   // Hard to test
-   function applyDiscount(cart): void {
-     cart.total -= discount;
-   }
+   // Harder — mutates in place, must inspect $cart after
+   public function applyDiscount(Cart $cart): void { $cart->total -= ...; }
    ```
 
 3. **Small surface area**
-   - Fewer methods = fewer tests needed
-   - Fewer params = simpler test setup
+   - Thin controllers: validate → delegate to Action → respond
+   - Few constructor params on Actions
+   - Form Requests own validation; Actions own orchestration
+
+4. **Feature tests for HTTP; unit tests for pure domain**
+   - If only a private method would need testing, the seam is probably wrong — extract an Action or value object.

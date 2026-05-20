@@ -17,16 +17,18 @@ Spend disproportionate effort here. **Be aggressive. Be creative. Refuse to give
 
 ### Ways to construct one — try them in roughly this order
 
-1. **Failing test** at whatever seam reaches the bug — unit, integration, e2e.
-2. **Curl / HTTP script** against a running dev server.
-3. **CLI invocation** with a fixture input, diffing stdout against a known-good snapshot.
-4. **Headless browser script** (Playwright / Puppeteer) — drives the UI, asserts on DOM/console/network.
-5. **Replay a captured trace.** Save a real network request / payload / event log to disk; replay it through the code path in isolation.
-6. **Throwaway harness.** Spin up a minimal subset of the system (one service, mocked deps) that exercises the bug code path with a single function call.
-7. **Property / fuzz loop.** If the bug is "sometimes wrong output", run 1000 random inputs and look for the failure mode.
-8. **Bisection harness.** If the bug appeared between two known states (commit, dataset, version), automate "boot at state X, check, repeat" so you can `git bisect run` it.
-9. **Differential loop.** Run the same input through old-version vs new-version (or two configs) and diff outputs.
-10. **HITL bash script.** Last resort. If a human must click, drive _them_ with `scripts/hitl-loop.template.sh` so the loop is still structured. Captured output feeds back to you.
+1. **Failing Pest/PHPUnit test** at whatever seam reaches the bug — Feature (HTTP), Unit (Action/Service), or Dusk browser test.
+2. **`php artisan test --filter=...`** on a minimal reproduction.
+3. **Curl / HTTP script** against `php artisan serve`, Sail, or Herd — `curl -v` with session cookie if needed.
+4. **Artisan command** with fixture input, diffing stdout against a known-good snapshot.
+5. **Laravel Dusk** or Playwright — drives the UI, asserts on DOM/console/network.
+6. **`php artisan tinker`** one-liner to exercise a code path in isolation.
+7. **Replay a captured trace.** Save a real HTTP request / payload / `storage/logs` excerpt; replay through the code path in isolation.
+8. **Throwaway harness.** Minimal route, Action, or Artisan command that hits the bug path with one call.
+9. **Property / fuzz loop.** If the bug is intermittent, run many random inputs and look for the failure mode.
+10. **Bisection harness.** If the bug appeared between two commits, automate checks for `git bisect run`.
+11. **Differential loop.** Same input through old vs new version (or config) and diff outputs.
+12. **HITL bash script.** Last resort — `scripts/hitl-loop.template.sh` when a human must click.
 
 Build the right feedback loop, and the bug is 90% fixed.
 
