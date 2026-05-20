@@ -12,3 +12,9 @@ Every skill in `engineering/`, `productivity/`, or `misc/` must have a reference
 Each skill entry in the top-level `README.md` must link the skill name to its `SKILL.md`.
 
 Each bucket folder has a `README.md` that lists every skill in the bucket with a one-line description, with the skill name linked to its `SKILL.md`.
+
+## OpenCode
+
+- Install paths: `~/.config/opencode/skills/` (global), `.opencode/skills/` (project) — use `./scripts/link-skills.sh opencode` or `opencode`.
+- Local plugin: `.opencode/plugins/laravel-skills.ts` (tools: `link_skills`, `list_skills`).
+- Config: `opencode.json` at repo root. Plugin deps: `.opencode/package.json`.

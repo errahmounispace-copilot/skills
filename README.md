@@ -1,25 +1,53 @@
 # Laravel Agent Skills
 
-Composable agent skills for **real Laravel engineering** — not vibe coding. Small, adaptable practices you can mix into any project. Works with Claude Code, Cursor, Codex, and other agents.
+Composable agent skills for **real Laravel engineering** — not vibe coding. Small, adaptable practices you can mix into any project. Works with **OpenCode**, Claude Code, Cursor, Codex, and other agents.
 
 Forked from [mattpocock/skills](https://github.com/mattpocock/skills) and adapted for PHP, Pest, Pint, and Laravel conventions.
 
 ## Quickstart
 
-1. Install skills into your agent (Cursor skills directory, Claude plugin, or symlink):
+### OpenCode
+
+OpenCode discovers skills from `~/.config/opencode/skills/` (and optionally `.opencode/skills/` in a project). This repo includes a local plugin that wraps the install scripts as tools.
 
 ```bash
-# Example: symlink all skills into Claude Code
+# Install skills globally for OpenCode (and Claude / Agents)
+./scripts/link-skills.sh opencode
+# Or all targets:
 ./scripts/link-skills.sh
+
+# Install into a Laravel project's .opencode/skills/
+./scripts/link-skills.sh --project /path/to/your-app opencode
 ```
 
-2. **Run `/setup-laravel-skills` once per Laravel repo.** It records:
+When you open **this repository** in OpenCode, `.opencode/plugins/laravel-skills.ts` loads automatically and exposes `link_skills` and `list_skills` tools (same behaviour as the bash scripts). OpenCode runs `bun install` in `.opencode/` on startup for `@opencode-ai/plugin`.
+
+See [OpenCode skills](https://opencode.ai/docs/skills) and [plugins](https://opencode.ai/docs/plugins).
+
+### Claude Code
+
+```bash
+./scripts/link-skills.sh claude
+```
+
+Or use `.claude-plugin/plugin.json` with the Claude plugin installer.
+
+### Other agents
+
+```bash
+./scripts/link-skills.sh agents   # ~/.agents/skills (also read by OpenCode)
+./scripts/list-skills.sh          # list SKILL.md paths in this repo
+```
+
+### Laravel project setup
+
+1. **Run `/setup-laravel-skills` once per Laravel repo.** It records:
    - Issue tracker (GitHub, GitLab, or local markdown)
    - Triage label vocabulary
    - Domain doc layout (`CONTEXT.md`, `docs/adr/`)
    - Laravel stack (Pest vs PHPUnit, Blade/Livewire/Inertia, Pint, PHPStan, dev environment)
 
-3. Use the skills that match your workflow — `/grill-with-docs` before big changes, `/tdd` for features, `/diagnose` for hard bugs.
+2. Use the skills that match your workflow — `/grill-with-docs` before big changes, `/tdd` for features, `/diagnose` for hard bugs.
 
 ## Why these skills exist
 
