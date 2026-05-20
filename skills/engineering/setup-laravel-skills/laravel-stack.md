@@ -41,6 +41,7 @@ If using PHPUnit instead, replace `pest` with `php artisan test` or `./vendor/bi
 ## Conventions skills should follow
 
 - Prefer **Feature tests** through HTTP (`$this->get()`, `actingAs()`) for user-visible behaviour
+- **Filament:** use `Pest\Livewire\livewire()` on Resource page classes; follow the `/tdd` skill's `filament.md`. Set `Filament::setCurrentPanel()` when testing non-default panels.
 - Prefer **Actions / Services** with constructor injection over fat controllers
 - Use framework fakes at boundaries: `Http::fake()`, `Queue::fake()`, `Mail::fake()`, `Event::fake()`
 - Use `RefreshDatabase` or `DatabaseTransactions` in feature tests — don't mock Eloquent internals

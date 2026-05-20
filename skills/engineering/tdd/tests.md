@@ -80,9 +80,12 @@ it('createUser makes user retrievable', function () {
 | Layer | Prefer | Avoid |
 |-------|--------|-------|
 | User flows | `tests/Feature/` + `actingAs()` + route helpers | Unit-testing controllers line-by-line |
+| **Filament admin** | `livewire(ResourcePage::class)` + `fillForm` / table helpers | Raw POST to `/admin/...` when a page test suffices |
 | Domain logic | Pest unit tests on Actions/Services | Mocking `Model::query()` |
 | External APIs | `Http::fake()` with assertSent | Mocking your own HTTP client wrapper's private methods |
 | Mail / queues | `Mail::fake()`, `Queue::fake()` + `assertPushed` | Asserting raw `DB` or `Log` for side effects |
 | Time | `Carbon::setTestNow()` or `travelTo()` | Sleeping in tests |
 
 Use factories (`User::factory()`) and `RefreshDatabase` — they're fast enough and keep tests honest.
+
+**Filament projects:** full patterns, vertical-slice order, and anti-patterns are in [filament.md](filament.md).
